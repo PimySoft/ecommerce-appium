@@ -31,10 +31,16 @@ describe('API: orders saved through POST /api/orders', () => {
     expect(body.order.couponCode, 'the saved order should carry the coupon code').to.equal(coupons.valid);
   });
 
-  it('AC-6: API saves the expected discount with the order @known-defect SHOP-101-D1', async () => {
+  it('AC-6: API saves the subtotal and flat £5.00 shipping with the order', async () => {
     const { body } = await createOrder(token, orderFor(coupons.valid));
     const expected = expectedTotals(subtotal, coupons.valid);
     expect(toPence(body.order.subtotal), 'saved subtotal should be the product price × 1').to.equal(subtotal);
+    expect(toPence(body.order.shipping_cost), 'saved shipping should be the flat £5.00').to.equal(expected.shipping);
+  });
+
+  it('AC-6: API saves the expected discount with the order @known-defect SHOP-101-D1', async () => {
+    const { body } = await createOrder(token, orderFor(coupons.valid));
+    const expected = expectedTotals(subtotal, coupons.valid);
     expect(
       toPence(body.order.discount),
       `the saved discount should be 25% of the subtotal (${formatPence(expected.discount)}), not a fixed amount; ` +
@@ -45,7 +51,6 @@ describe('API: orders saved through POST /api/orders', () => {
   it('AC-6: API saves the expected total with the order @known-defect SHOP-101-D1', async () => {
     const { body } = await createOrder(token, orderFor(coupons.valid));
     const expected = expectedTotals(subtotal, coupons.valid);
-    expect(toPence(body.order.shipping_cost), 'saved shipping should be the flat £5.00').to.equal(expected.shipping);
     expect(
       toPence(body.order.total),
       `saved total should be ${formatPence(expected.total)} (${formatPence(subtotal)} − ${formatPence(expected.discount)} + ` +

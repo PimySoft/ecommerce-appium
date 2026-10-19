@@ -29,13 +29,35 @@ async function summaryFor(items: CartLine[], couponCode?: string) {
 describe('API: basket summary from POST /api/cart/summary', () => {
   before(assertBackendUp);
 
+  describe('AC-4: subtotal is the line prices added together', () => {
+    const baskets = [
+      ['one product', [line(products.primary)], lineSubtotal(products.primary)],
+      [
+        'two products',
+        [line(products.primary), line(products.secondary)],
+        lineSubtotal(products.primary) + lineSubtotal(products.secondary),
+      ],
+      [
+        'the half-penny basket',
+        [line(roundingBoundary.product, roundingBoundary.quantity)],
+        lineSubtotal(roundingBoundary.product, roundingBoundary.quantity),
+      ],
+    ] as const;
+
+    for (const [label, items, expected] of baskets) {
+      it(`AC-4: API subtotal for ${label} matches the fixture prices`, async () => {
+        const { actual } = await summaryFor([...items], coupons.valid);
+        expect(actual.subtotal).to.equal(expected);
+      });
+    }
+  });
+
   describe('AC-2: percentage discount for SAVE25', () => {
     const subtotal = lineSubtotal(products.primary);
 
     it('AC-2: API takes 25% off for SAVE25 @known-defect SHOP-101-D1', async () => {
       const { actual } = await summaryFor([line(products.primary)], coupons.valid);
       const expected = expectedTotals(subtotal, coupons.valid);
-      expect(actual.subtotal, 'subtotal should be the product price × 1').to.equal(subtotal);
       expect(
         actual.discount,
         `${D1}. Expected ${formatPence(expected.discount)} on ${formatPence(subtotal)}, got ${formatPence(actual.discount)}`,
@@ -46,7 +68,6 @@ describe('API: basket summary from POST /api/cart/summary', () => {
       const basketSubtotal = lineSubtotal(products.primary) + lineSubtotal(products.secondary);
       const { actual } = await summaryFor([line(products.primary), line(products.secondary)], coupons.valid);
       const expected = expectedTotals(basketSubtotal, coupons.valid);
-      expect(actual.subtotal, 'subtotal should be both product prices added together').to.equal(basketSubtotal);
       expect(
         actual.discount,
         `${D1}. Expected ${formatPence(expected.discount)}, got ${formatPence(actual.discount)}`,
@@ -58,7 +79,6 @@ describe('API: basket summary from POST /api/cart/summary', () => {
       const basketSubtotal = lineSubtotal(product, quantity);
       const { actual } = await summaryFor([line(product, quantity)], coupons.valid);
       const expected = expectedTotals(basketSubtotal, coupons.valid);
-      expect(actual.subtotal, 'subtotal should be the product price × quantity').to.equal(basketSubtotal);
       expect(
         actual.discount,
         `${D1}. Expected ${formatPence(expected.discount)}, got ${formatPence(actual.discount)}`,
@@ -75,10 +95,14 @@ describe('API: basket summary from POST /api/cart/summary', () => {
     ] as const;
 
     for (const [label, code] of variants) {
-      it(`AC-2: API accepts SAVE25 ${label} @known-defect SHOP-101-D1`, async () => {
-        const { body, actual } = await summaryFor([line(products.primary)], code);
-        const expected = expectedTotals(subtotal, code);
+      it(`AC-2: API accepts SAVE25 ${label}`, async () => {
+        const { body } = await summaryFor([line(products.primary)], code);
         expect(body.couponApplied, `"${code}" should count as SAVE25`).to.be.true;
+      });
+
+      it(`AC-2: API takes 25% off for SAVE25 ${label} @known-defect SHOP-101-D1`, async () => {
+        const { actual } = await summaryFor([line(products.primary)], code);
+        const expected = expectedTotals(subtotal, code);
         expect(
           actual.discount,
           `${D1}. Expected ${formatPence(expected.discount)}, got ${formatPence(actual.discount)}`,

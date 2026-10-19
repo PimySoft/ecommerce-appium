@@ -19,10 +19,8 @@ const run = (results: TestResult[], extra: Partial<ResultsFile> = {}): ResultsFi
   results,
   ...extra,
 });
-const rerun = (results: TestResult[]): ResultsFile => run(results, { rerun: true });
-
-function outcomes(main: TestResult[], reruns: TestResult[][] = []): Record<string, string> {
-  return Object.fromEntries(classifyRun([run(main), ...reruns.map(rerun)]).map((c) => [c.rawTitle, c.outcome]));
+function outcomes(results: TestResult[]): Record<string, string> {
+  return Object.fromEntries(classifyRun([run(results)]).map((c) => [c.rawTitle, c.outcome]));
 }
 
 describe('unit: classify (what test:report counts as red or green)', () => {
@@ -41,7 +39,7 @@ describe('unit: classify (what test:report counts as red or green)', () => {
       expect(outcomes([passed(title)])[title]).to.equal('unexpectedly-green');
     });
 
-    it('an untagged failure with no rerun is new-red', () => {
+    it('an untagged failure is new-red', () => {
       expect(outcomes([failed('AC-5: invalid code')])['AC-5: invalid code']).to.equal('new-red');
     });
 
@@ -61,47 +59,10 @@ describe('unit: classify (what test:report counts as red or green)', () => {
     });
   });
 
-  describe('reruns', () => {
-    it('an untagged failure that passes on rerun is flaky, never green', () => {
-      expect(outcomes([failed('t')], [[passed('t')]]).t).to.equal('flaky');
-    });
-
-    it('an untagged failure that fails again on rerun stays new-red', () => {
-      expect(outcomes([failed('t')], [[failed('t')]]).t).to.equal('new-red');
-    });
-
-    it('a rerun of a different test does not rescue this one', () => {
-      expect(outcomes([failed('t')], [[passed('other')]]).t).to.equal('new-red');
-    });
-
-    it('a rerun from another source or spec is not matched', () => {
-      const classified = classifyRun([
-        run([failed('t')]),
-        run([passed('t')], { rerun: true, source: 'android' }),
-        run([passed('t')], { rerun: true, file: '/repo/e2e/specs/other.spec.ts' }),
-      ]);
-      expect(classified.map((c) => c.outcome)).to.deep.equal(['new-red']);
-    });
-
-    it('reruns are never reported as tests of their own', () => {
-      expect(classifyRun([run([failed('t')]), rerun([passed('t')])])).to.have.length(1);
-    });
-  });
-
   describe('setup hooks and crashed specs', () => {
     it('a failed setup hook is new-red, even in a spec full of tagged tests', () => {
       const title = '"before each" hook for "AC-2: 25% off @known-defect SHOP-101-D1"';
       expect(outcomes([failedHook(title)])[title]).to.equal('new-red');
-    });
-
-    it('a failed hook whose whole-spec rerun passes is flaky', () => {
-      expect(outcomes([failedHook('hook')], [[passed('a'), failed('b @known-defect SHOP-101-D1')]]).hook).to.equal(
-        'flaky',
-      );
-    });
-
-    it('a failed hook whose rerun fails unexpectedly stays new-red', () => {
-      expect(outcomes([failedHook('hook')], [[passed('a'), failed('b')]]).hook).to.equal('new-red');
     });
 
     it('a spec that reported no tests at all becomes a failed hook, so a crash can never look green', () => {

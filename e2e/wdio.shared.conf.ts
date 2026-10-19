@@ -20,7 +20,7 @@ export const appiumService = (name: string, port: number): Services.ServiceEntry
     // The service's own lookup fails for a hoisted install.
     command: 'appium',
     args: { port },
-    logPath: path.join(LOGS_DIR, `appium-${name}${process.env.E2E_RERUN === '1' ? '-rerun' : ''}`),
+    logPath: path.join(LOGS_DIR, `appium-${name}`),
   },
 ];
 
@@ -92,8 +92,8 @@ export const config: Partial<WebdriverIO.Config> = {
   onWorkerEnd: function (cid, exitCode, specs) {
     if (exitCode === 0) return;
     const platform = String(launchedCapabilities[Number(cid.split('-')[0])]?.platformName ?? 'device').toLowerCase();
-    if (fs.existsSync(path.join(LOGS_DIR, resultsFileName(platform, cid, specs[0])))) return;
-    writeResults(resultsFileName(platform, cid, specs[0]), {
+    if (fs.existsSync(path.join(LOGS_DIR, resultsFileName(platform, cid)))) return;
+    writeResults(resultsFileName(platform, cid), {
       source: platform,
       file: specs[0],
       results: [

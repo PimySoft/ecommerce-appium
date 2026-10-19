@@ -48,12 +48,15 @@ describe('AC-6: what the confirmation screen tells the shopper', () => {
     expect(await OrderSuccessPage.getCoupon()).to.contain(coupons.valid);
   });
 
-  it('AC-6: the amount saved is shown @known-defect SHOP-101-D2 @known-defect SHOP-101-D1', async () => {
+  it('AC-6: a discount row is shown @known-defect SHOP-101-D2', async () => {
     expect(
       await OrderSuccessPage.isDiscountDisplayed(),
       `the confirmation screen should show the ${formatPence(expected.discount)} discount. The saved order ` +
         'has it (see api/order.api.spec.ts), so a missing row is known defect SHOP-101-D2',
     ).to.be.true;
+  });
+
+  it('AC-6: the amount saved is the expected 25% @known-defect SHOP-101-D2 @known-defect SHOP-101-D1', async () => {
     expect(await OrderSuccessPage.getDiscount()).to.equal(expected.discount);
   });
 });

@@ -12,38 +12,41 @@ describe('Coupon input edge cases', () => {
     await setUpGuestCartWithProduct(products.primary);
   });
 
-  it('AC-2: a lowercase code ("save25") is accepted @known-defect SHOP-101-D1', async () => {
-    expect(await CartPage.getSubtotal(), 'displayed subtotal should be the product price × 1').to.equal(subtotal);
-
+  it('AC-2: a lowercase code ("save25") is accepted', async () => {
     await CartPage.applyCoupon(coupons.validLowercase);
 
-    const discountShown = await CartPage.isDiscountLineDisplayed();
-    expect(discountShown, 'a lowercase code should still be accepted').to.be.true;
-
-    const discount = await CartPage.getDiscount();
-
-    expect(discount).to.equal(expectedDiscount(subtotal, coupons.validLowercase));
+    expect(await CartPage.isDiscountLineDisplayed(), 'a lowercase code should still be accepted').to.be.true;
   });
 
-  it('AC-2: a mixed-case code ("SaVe25") is accepted @known-defect SHOP-101-D1', async () => {
+  it('AC-2: a lowercase code ("save25") takes 25% off @known-defect SHOP-101-D1', async () => {
+    await CartPage.applyCoupon(coupons.validLowercase);
+
+    expect(await CartPage.getDiscount()).to.equal(expectedDiscount(subtotal, coupons.validLowercase));
+  });
+
+  it('AC-2: a mixed-case code ("SaVe25") is accepted', async () => {
     await CartPage.applyCoupon(coupons.validMixedCase);
 
-    const discountShown = await CartPage.isDiscountLineDisplayed();
-    expect(discountShown, 'a mixed-case code should still be accepted').to.be.true;
-
-    const discount = await CartPage.getDiscount();
-
-    expect(discount).to.equal(expectedDiscount(subtotal, coupons.validMixedCase));
+    expect(await CartPage.isDiscountLineDisplayed(), 'a mixed-case code should still be accepted').to.be.true;
   });
 
-  it('AC-1: spaces before and after a valid code are ignored @known-defect SHOP-101-D1', async () => {
+  it('AC-2: a mixed-case code ("SaVe25") takes 25% off @known-defect SHOP-101-D1', async () => {
+    await CartPage.applyCoupon(coupons.validMixedCase);
+
+    expect(await CartPage.getDiscount()).to.equal(expectedDiscount(subtotal, coupons.validMixedCase));
+  });
+
+  it('AC-1: spaces before and after a valid code are ignored', async () => {
     await CartPage.applyCoupon(coupons.validWithWhitespace);
 
-    const discountShown = await CartPage.isDiscountLineDisplayed();
-    expect(discountShown, 'a valid code with spaces around it should still be accepted').to.be.true;
+    expect(await CartPage.isDiscountLineDisplayed(), 'a valid code with spaces around it should still be accepted').to
+      .be.true;
+  });
 
-    const discount = await CartPage.getDiscount();
-    expect(discount).to.equal(expectedDiscount(subtotal, coupons.validWithWhitespace));
+  it('AC-2: a valid code with spaces around it takes 25% off @known-defect SHOP-101-D1', async () => {
+    await CartPage.applyCoupon(coupons.validWithWhitespace);
+
+    expect(await CartPage.getDiscount()).to.equal(expectedDiscount(subtotal, coupons.validWithWhitespace));
   });
 
   it('AC-1: tapping Apply twice with the same code does not double the discount', async () => {

@@ -13,7 +13,6 @@
     "test:unit": "mocha --require ./api/register.cjs --extension ts \"unit/**/*.test.ts\"",
     "test:report": "node -r ./api/register.cjs scripts/defect-report.ts",
     "test:table": "node -r ./api/register.cjs scripts/results-table.ts",
-    "test:rerun-failed": "node -r ./api/register.cjs scripts/rerun-failed.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "check": "npm run typecheck && npm run lint && npm run format:check",

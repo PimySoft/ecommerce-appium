@@ -31,7 +31,7 @@ export default class ResultsReporter extends WDIOReporter {
   }
 
   onRunnerEnd(): void {
-    writeResults(resultsFileName(this.source, this.cid, this.file), {
+    writeResults(resultsFileName(this.source, this.cid), {
       source: this.source,
       file: this.file,
       results: this.results,

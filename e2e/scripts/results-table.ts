@@ -4,7 +4,7 @@ import { classifyRun, type Classified } from '../helpers/classify.js';
 import { RESULTS_DIR, readResults } from '../helpers/resultsFile.js';
 
 const files = readResults();
-if (files.filter((file) => !file.rerun).length === 0) {
+if (files.length === 0) {
   console.error('No results found in logs/. Run a suite first (npm run test:api, test:ios or test:android).');
   process.exit(2);
 }
@@ -17,7 +17,6 @@ function cell(results: Classified[]): string {
   const n = (outcome: Classified['outcome']) => results.filter((row) => row.outcome === outcome).length;
   const parts = [`${n('pass') + n('unexpectedly-green')}/${tests.length} pass`];
   if (n('expected-red') > 0) parts.push(`${n('expected-red')} known defect`);
-  if (n('flaky') > 0) parts.push(`${n('flaky')} flaky`);
   if (n('new-red') > 0) parts.push(`**${n('new-red')} new-red**`);
   return parts.join(', ');
 }

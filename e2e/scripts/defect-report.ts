@@ -5,16 +5,13 @@ import { readResults } from '../helpers/resultsFile.js';
 const wanted = process.argv.slice(2);
 const files = readResults().filter((file) => wanted.length === 0 || wanted.includes(file.source));
 
-if (files.filter((file) => !file.rerun).length === 0) {
+if (files.length === 0) {
   console.error('No results found in logs/. Run a suite first (npm run test:api, test:ios or test:android).');
   process.exit(2);
 }
 
 const rows = classifyRun(files);
-
-const warnings = files
-  .filter((file) => !file.rerun)
-  .flatMap((file) => file.results.flatMap((r) => unknownTagWarnings(file.source, r)));
+const warnings = files.flatMap((file) => file.results.flatMap((r) => unknownTagWarnings(file.source, r)));
 const where = (outcome: Outcome) => rows.filter((row) => row.outcome === outcome);
 const count = (outcome: Outcome, source: string) => where(outcome).filter((row) => row.source === source).length;
 
@@ -25,7 +22,6 @@ for (const source of [...new Set(rows.map((row) => row.source))]) {
     `${String(count('expected-red', source)).padStart(3)} expected-red`,
     `${String(count('new-red', source)).padStart(3)} new-red`,
     `${String(count('unexpectedly-green', source)).padStart(3)} unexpectedly-green`,
-    `${String(count('flaky', source)).padStart(3)} flaky`,
   ];
   if (count('skipped', source)) parts.push(`${count('skipped', source)} skipped`);
   console.log(`  ${source.padEnd(8)} ${parts.join(' · ')}`);
@@ -41,18 +37,11 @@ function section(heading: string, list: Classified[], detail: (row: Classified) 
   }
 }
 
-section('NEW RED: failing without a known-defect tag, investigate', where('new-red'), (row) =>
-  [row.error, row.rerunState === 'failed' ? '(failed again on rerun)' : undefined].filter(Boolean).join(' '),
-);
+section('NEW RED: failing without a known-defect tag, investigate', where('new-red'), (row) => row.error);
 section(
   'UNEXPECTEDLY GREEN: tagged test now passes, is the defect fixed? Remove its tag',
   where('unexpectedly-green'),
   (row) => row.defects.join(', '),
-);
-section(
-  'FLAKY: failed, then passed on rerun with no code change. Not green: find the root cause',
-  where('flaky'),
-  (row) => row.error,
 );
 
 const expectedRed = where('expected-red');
@@ -69,12 +58,9 @@ if (expectedRed.length > 0) {
 for (const warning of warnings) console.warn(`\nwarning: ${warning}`);
 
 const gating = where('new-red').length + where('unexpectedly-green').length;
-if (gating === 0) {
-  const flaky = where('flaky').length;
-  console.log(
-    `\nNo new failures. Every red test is a documented known defect${flaky ? ` (not gating: ${flaky} flaky)` : ''}.`,
-  );
-} else {
-  console.log(`\n${where('new-red').length} new-red, ${where('unexpectedly-green').length} unexpectedly-green.`);
-}
+console.log(
+  gating === 0
+    ? '\nNo new failures. Every red test is a documented known defect.'
+    : `\n${where('new-red').length} new-red, ${where('unexpectedly-green').length} unexpectedly-green.`,
+);
 process.exit(gating === 0 ? 0 : 1);

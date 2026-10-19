@@ -40,16 +40,15 @@ The UI suites and the API specs need the app and backend, which aren't in this r
 
 ## Running
 
-| Command                     | What it does                                                                          |
-| --------------------------- | ------------------------------------------------------------------------------------- |
-| `npm run test:ios`          | UI suite on the iOS Simulator                                                         |
-| `npm run test:android`      | UI suite on the Android emulator                                                      |
-| `npm run test:api`          | API specs against the backend; about a second, no simulator                           |
-| `npm run check`             | `tsc --noEmit`, ESLint, then the Prettier check                                       |
-| `npm run test:unit`         | Unit tests for the pricing oracle and the result classifier; no app or backend needed |
-| `npm run test:report`       | Sorts the last run into expected-red, new-red, unexpectedly-green and flaky           |
-| `npm run test:rerun-failed` | Reruns each new-red test once, so the report can tell flaky from broken               |
-| `npm run test:table`        | Prints a per-spec pass/fail table (Markdown) from the last run                        |
+| Command                | What it does                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------------- |
+| `npm run test:ios`     | UI suite on the iOS Simulator                                                         |
+| `npm run test:android` | UI suite on the Android emulator                                                      |
+| `npm run test:api`     | API specs against the backend; about a second, no simulator                           |
+| `npm run check`        | `tsc --noEmit`, ESLint, then the Prettier check                                       |
+| `npm run test:unit`    | Unit tests for the pricing oracle and the result classifier; no app or backend needed |
+| `npm run test:report`  | Sorts the last run into expected-red, new-red and unexpectedly-green                  |
+| `npm run test:table`   | Prints a per-spec pass/fail table (Markdown) from the last run                        |
 
 Settings you can override with environment variables:
 
@@ -78,17 +77,14 @@ Some tests are expected to fail. They prove three open defects and end their tit
 | 1         | A **new-red** (untagged failure or a failed setup hook), an **unexpectedly-green** (tagged but passing, so the defect looks fixed and the tag should be removed) |
 | 2         | No results found                                                                                                                                                 |
 
-In CI, run the suite while ignoring its exit code, give new failures one more try, then gate on the report:
+In CI, run the suite while ignoring its exit code, then gate on the report:
 
     npm run test:ios || true
-    npm run test:rerun-failed -- ios
     npm run test:report -- ios
 
 Each failed UI test also saves a screenshot and the page source to `logs/`. A worker that dies mid-spec is recorded as a failed setup hook, so a crash can never look green.
 
-## Flaky tests
-
-The main run never retries (`specFileRetries` and Mocha `retries` are 0), and page objects never tap twice. A test that fails and then passes on `test:rerun-failed` is reported as **flaky**, never as green, and gets a root-cause fix. The full policy is in the [engineering notes](docs/engineering-notes.md#flaky-test-policy).
+Nothing is retried: `specFileRetries` and Mocha `retries` are 0, and page objects never tap twice.
 
 ## Conventions for new tests
 
@@ -102,7 +98,7 @@ ESLint enforces the first two rules and Prettier the formatting. The rest are ch
 - **Never hardcode an expected total.** Compute it with [`helpers/expectedPricing.ts`](helpers/expectedPricing.ts) from the fixture prices.
 - **One acceptance criterion per test, named with its id** (`AC-3: ...`), so a failure maps straight back to a requirement.
 - **Build state through the shared setup** in [`helpers/cartSetup.ts`](helpers/cartSetup.ts), not by copying steps into a spec.
-- **Never weaken an assertion to get a test passing.** If it fails because of a real defect, add the defect to `knownDefects.ts` and tag the test.
+- **Never weaken an assertion to get a test passing.** If it fails because of a real defect, add the defect to `knownDefects.ts` and tag the test. A tagged test checks only what its defect breaks; put any other check in an untagged test.
 
 ## Layout
 
@@ -113,8 +109,8 @@ unit/           unit tests for the pricing oracle and the result classifier
 pageobjects/    BasePage plus one class per screen (product, cart, login, checkout, confirmation)
 helpers/        pricing oracle, cart setup, app lifecycle, gestures, keyboard, timeouts, defect tags, reporters
 fixtures/       products, coupons, users, checkout details
-scripts/        defect-report.ts, results-table.ts, rerun-failed.ts
+scripts/        defect-report.ts, results-table.ts
 wdio.*.conf.ts  shared, iOS and Android WebdriverIO configs
 ```
 
-The flaky-test policy, selector findings, automation problems solved along the way, and timing measurements are in [`docs/engineering-notes.md`](docs/engineering-notes.md).
+Selector findings, automation problems solved and timing measurements are in [`docs/engineering-notes.md`](docs/engineering-notes.md).

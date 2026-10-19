@@ -21,9 +21,6 @@ describe('SAVE25 as the basket changes', () => {
   it('AC-2: SAVE25 takes 25% off a basket with two different products @known-defect SHOP-101-D1', async () => {
     await addSecondary();
     const expected = expectedTotals(lineSubtotal(primary) + lineSubtotal(secondary), coupons.valid);
-    expect(await CartPage.getSubtotal(), 'displayed subtotal should be both product prices').to.equal(
-      expected.subtotal,
-    );
 
     await CartPage.applyCoupon(coupons.valid);
 
@@ -45,18 +42,37 @@ describe('SAVE25 as the basket changes', () => {
     ).to.equal(expected.total);
   });
 
+  it('AC-2: adding a second unit after applying SAVE25 updates the subtotal and keeps the coupon', async () => {
+    await CartPage.applyCoupon(coupons.valid);
+    await ProductDetailPage.addAnotherProduct(primary);
+
+    expect(await CartPage.getSubtotal(), 'displayed subtotal should be the product price × 2').to.equal(
+      lineSubtotal(primary, 2),
+    );
+    expect(await CartPage.isDiscountLineDisplayed(), 'the coupon should still be applied').to.be.true;
+  });
+
   it('AC-2: adding a second unit after applying SAVE25 updates the discount @known-defect SHOP-101-D1', async () => {
     await CartPage.applyCoupon(coupons.valid);
     await ProductDetailPage.addAnotherProduct(primary);
     const expected = expectedTotals(lineSubtotal(primary, 2), coupons.valid);
-    expect(await CartPage.getSubtotal(), 'displayed subtotal should be the product price × 2').to.equal(
-      expected.subtotal,
-    );
 
     expect(
       await CartPage.getDiscount(),
       `the discount should be worked out again: 25% of ${formatPence(expected.subtotal)} is ${formatPence(expected.discount)}`,
     ).to.equal(expected.discount);
+  });
+
+  it('AC-2: taking a product out after applying SAVE25 updates the subtotal and keeps the coupon', async () => {
+    await addSecondary();
+    await CartPage.applyCoupon(coupons.valid);
+
+    await CartPage.removeLine(secondary);
+
+    expect(await CartPage.getSubtotal(), 'subtotal should drop to the product that is left').to.equal(
+      lineSubtotal(primary),
+    );
+    expect(await CartPage.isDiscountLineDisplayed(), 'the coupon should still be applied').to.be.true;
   });
 
   it('AC-2: taking a product out after applying SAVE25 updates the discount for what is left @known-defect SHOP-101-D1', async () => {
@@ -65,9 +81,6 @@ describe('SAVE25 as the basket changes', () => {
 
     await CartPage.removeLine(secondary);
     const expected = expectedTotals(lineSubtotal(primary), coupons.valid);
-    expect(await CartPage.getSubtotal(), 'subtotal should drop to the product that is left').to.equal(
-      expected.subtotal,
-    );
 
     expect(
       await CartPage.getDiscount(),
@@ -87,9 +100,6 @@ describe('SAVE25 as the basket changes', () => {
   it('AC-2: a 25% discount ending in half a penny is rounded up @known-defect SHOP-101-D1', async () => {
     await ProductDetailPage.addAnotherProduct(roundingBoundary.product);
     const expected = expectedTotals(lineSubtotal(roundingBoundary.product, roundingBoundary.quantity), coupons.valid);
-    expect(await CartPage.getSubtotal(), 'displayed subtotal should be the product price × 2').to.equal(
-      expected.subtotal,
-    );
 
     await CartPage.applyCoupon(coupons.valid);
 

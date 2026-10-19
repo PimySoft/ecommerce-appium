@@ -15,8 +15,7 @@ class ResultsReporter extends reporters.Spec {
       bySpec.get(spec).push(result);
     };
     const logsDir = path.resolve('logs');
-    const rerun = process.env.E2E_RERUN === '1';
-    const ownFiles = rerun ? /^results-api-rerun(-.*)?\.json$/ : /^results-api(-.*)?\.json$/;
+    const ownFiles = /^results-api(-.*)?\.json$/;
 
     runner.on(EVENT_RUN_BEGIN, () => {
       for (const name of fs.existsSync(logsDir) ? fs.readdirSync(logsDir) : []) {
@@ -31,8 +30,8 @@ class ResultsReporter extends reporters.Spec {
     runner.on(EVENT_RUN_END, () => {
       fs.mkdirSync(logsDir, { recursive: true });
       for (const [spec, results] of bySpec) {
-        const name = `results-api${rerun ? '-rerun' : ''}-${path.basename(spec).replace(/\.[^.]+$/, '')}.json`;
-        const contents = { source: 'api', file: spec, ...(rerun ? { rerun: true } : {}), results };
+        const name = `results-api-${path.basename(spec).replace(/\.[^.]+$/, '')}.json`;
+        const contents = { source: 'api', file: spec, results };
         fs.writeFileSync(path.join(logsDir, name), JSON.stringify(contents, null, 2));
       }
     });
