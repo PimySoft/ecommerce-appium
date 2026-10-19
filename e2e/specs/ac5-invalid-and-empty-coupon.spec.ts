@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import CartPage from '../pageobjects/CartPage.js';
-import { setUpCartWithProduct } from '../helpers/cartSetup.js';
+import { setUpGuestCartWithProduct } from '../helpers/cartSetup.js';
 import { products } from '../fixtures/products.js';
 import { coupons, notes } from '../fixtures/coupons.js';
 import { expectedTotal, lineSubtotal } from '../helpers/expectedPricing.js';
@@ -10,7 +10,7 @@ describe('AC-5: codes that should not give a discount', () => {
   const totalWithoutCoupon = expectedTotal(subtotal, undefined);
 
   beforeEach(async () => {
-    await setUpCartWithProduct(products.primary);
+    await setUpGuestCartWithProduct(products.primary);
   });
 
   it('AC-5: an unknown code changes nothing and shows an error', async () => {

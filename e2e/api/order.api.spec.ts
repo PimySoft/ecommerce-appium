@@ -1,12 +1,5 @@
 import { expect } from 'chai';
-import {
-  assertBackendUp,
-  createOrder,
-  getOrder,
-  login,
-  toPence,
-  type OrderRequest,
-} from '../helpers/apiClient.js';
+import { assertBackendUp, createOrder, getOrder, login, toPence, type OrderRequest } from '../helpers/apiClient.js';
 import { products } from '../fixtures/products.js';
 import { coupons } from '../fixtures/coupons.js';
 import { testShippingDetails } from '../fixtures/checkoutDetails.js';
@@ -27,7 +20,6 @@ describe('API: orders saved through POST /api/orders', () => {
   const subtotal = lineSubtotal(products.primary);
   let token: string;
 
-  // Backend data is wiped on restart, so each test places its own order and never relies on an earlier run.
   before(async () => {
     await assertBackendUp();
     token = await login();
@@ -63,7 +55,7 @@ describe('API: orders saved through POST /api/orders', () => {
 
   it('AC-6: API order numbers follow the expected pattern', async () => {
     const { body } = await createOrder(token, orderFor(coupons.valid));
-    // Order numbers come from a counter that carries over between runs, so only the pattern is checked.
+    // The order counter is shared across runs, so only the format is predictable.
     expect(body.order.orderNumber).to.match(/^WS-\d{4}-\d{6}$/);
   });
 

@@ -1,18 +1,11 @@
-/**
- * The SHOP-101 pricing rule, written separately from the app. It must never
- * import the app's or the backend's pricing code, which both have the SAVE25
- * defect; a test would then only be comparing the app with itself.
- *
- * All amounts are integer pence, so no float rounding can hide (or invent) a
- * penny difference. The 25% discount is rounded half up to the nearest penny.
- */
+// The documented pricing rule, in integer pence. Never import the app's or the backend's pricing code here:
+// a test would then only compare the app with itself.
 export type Pence = number;
 
 const VALID_COUPON = 'SAVE25';
 const DISCOUNT_PERCENT = 25;
 const FLAT_SHIPPING: Pence = 500;
 
-/** Parses `£X.XX` / `-£X.XX` summary text (always two decimals, as the app renders it) into signed pence. */
 export function parsePence(text: string): Pence {
   const match = text.trim().match(/^(-?)£(\d+)\.(\d{2})$/);
   if (!match) throw new Error(`Unrecognised currency text: "${text}"`);
@@ -20,23 +13,25 @@ export function parsePence(text: string): Pence {
   return (sign === '-' ? -1 : 1) * (Number(pounds) * 100 + Number(pennies));
 }
 
-/** Formats pence as the app does (`£X.XX`, `-£X.XX`), for assertion messages. */
 export function formatPence(pence: Pence): string {
   return `${pence < 0 ? '-' : ''}£${(Math.abs(pence) / 100).toFixed(2)}`;
 }
 
-/** Subtotal for `quantity` units of a fixture product, from its real unit price. */
 export function lineSubtotal(product: { pricePence: Pence }, quantity = 1): Pence {
   return product.pricePence * quantity;
 }
 
 export function isValidCoupon(couponCode: string | undefined): boolean {
-  return String(couponCode ?? '').trim().toUpperCase() === VALID_COUPON;
+  return (
+    String(couponCode ?? '')
+      .trim()
+      .toUpperCase() === VALID_COUPON
+  );
 }
 
 export function expectedDiscount(subtotal: Pence, couponCode: string | undefined): Pence {
   if (!isValidCoupon(couponCode)) return 0;
-  const discount = Math.floor((subtotal * DISCOUNT_PERCENT + 50) / 100); // half up
+  const discount = Math.floor((subtotal * DISCOUNT_PERCENT + 50) / 100); // rounds half a penny up
   return Math.min(subtotal, discount);
 }
 

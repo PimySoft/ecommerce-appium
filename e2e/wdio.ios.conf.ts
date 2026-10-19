@@ -1,6 +1,5 @@
 import { appiumService, config as sharedConfig } from './wdio.shared.conf.js';
 
-// iOS Simulator: launches the debug build installed by `npx expo run:ios`.
 export const config: WebdriverIO.Config = {
   ...sharedConfig,
 
@@ -15,7 +14,7 @@ export const config: WebdriverIO.Config = {
       'appium:bundleId': 'com.example.shop',
       'appium:noReset': true,
       'appium:newCommandTimeout': 240,
-      // The app's perpetual timers/animations stop WDA ever seeing it as idle, which starves taps.
+      // The app's timers never let WebDriverAgent see it as idle, which starves taps.
       'appium:waitForQuiescence': false,
       'appium:reduceMotion': true,
     },

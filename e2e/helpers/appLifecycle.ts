@@ -1,10 +1,5 @@
 import ProductDetailPage from '../pageobjects/ProductDetailPage.js';
 
-/**
- * The app id the session was started with, read from the capabilities so it is
- * declared only in the wdio configs. Returned in the shape the `mobile:` app
- * lifecycle commands expect for the current platform.
- */
 function appIdArgs(): { bundleId: string } | { appId: string } {
   const caps = driver.capabilities as unknown as Record<string, string | undefined>;
   if (driver.isIOS) {
@@ -17,11 +12,7 @@ function appIdArgs(): { bundleId: string } | { appId: string } {
   return { appId };
 }
 
-/**
- * The one reset every test setup starts from. Auth, cart and coupon are
- * in-memory React state, so a relaunch returns the app to a signed-out, empty,
- * coupon-free Home regardless of what a previous test left behind.
- */
+// Sign-in, cart and coupon are in-memory app state, so a relaunch is a complete reset.
 export async function resetApp(): Promise<void> {
   const args = appIdArgs();
   await driver.execute('mobile: terminateApp', args);

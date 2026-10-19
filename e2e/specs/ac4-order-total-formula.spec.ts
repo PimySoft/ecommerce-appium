@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import CartPage from '../pageobjects/CartPage.js';
-import { setUpCartWithProduct } from '../helpers/cartSetup.js';
+import { setUpGuestCartWithProduct } from '../helpers/cartSetup.js';
 import { products } from '../fixtures/products.js';
 import { coupons } from '../fixtures/coupons.js';
 import { expectedTotal, formatPence, lineSubtotal } from '../helpers/expectedPricing.js';
@@ -9,7 +9,7 @@ describe('AC-4: how the order total is built', () => {
   const subtotal = lineSubtotal(products.primary);
 
   beforeEach(async () => {
-    await setUpCartWithProduct(products.primary);
+    await setUpGuestCartWithProduct(products.primary);
   });
 
   it('AC-4: with no coupon, the total adds up from the summary rows', async () => {
@@ -21,11 +21,12 @@ describe('AC-4: how the order total is built', () => {
     const total = await CartPage.getTotal();
 
     expect(total).to.equal(subtotal - discount + shipping);
-    expect(total, `expected total for ${formatPence(subtotal)} with no coupon`).to.equal(expectedTotal(subtotal, undefined));
+    expect(total, `expected total for ${formatPence(subtotal)} with no coupon`).to.equal(
+      expectedTotal(subtotal, undefined),
+    );
   });
 
-  // Checks only that the total agrees with the rows the app shows, whatever discount it applied, so a
-  // wrong discount (AC-2) can't fail it. The next test compares the total with the expected figure.
+  // Uses the app's own discount, so this stays independent of AC-2's percentage defect.
   it('AC-4: with SAVE25, the total adds up from the summary rows', async () => {
     await CartPage.applyCoupon(coupons.valid);
 

@@ -1,5 +1,3 @@
-// Backend seed products. Unit price is flat regardless of size, in integer pence.
-// `categoryFilter` is the products-screen filter slug used to reach the product.
 export interface Product {
   id: string;
   name: string;
@@ -13,5 +11,5 @@ export const products: Record<'primary' | 'secondary', Product> = {
   secondary: { id: 'p-fleece-jacket', name: 'Fleece Jacket', pricePence: 3499, size: 'M', categoryFilter: 'jackets' },
 };
 
-// Two primary units = £37.98, so 25% is £9.495: a half-penny that must round to £9.50.
+// 2 × £18.99 = £37.98, and 25% of that is £9.495: a half penny.
 export const roundingBoundary = { product: products.primary, quantity: 2 };

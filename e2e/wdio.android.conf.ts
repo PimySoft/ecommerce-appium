@@ -1,7 +1,6 @@
 import { appiumService, config as sharedConfig } from './wdio.shared.conf.js';
 
-// Android emulator: launches the debug build installed by `npx expo run:android`.
-// Requires `adb reverse tcp:4000 tcp:4000` once per emulator boot so the app reaches the backend.
+// Run `adb reverse tcp:4000 tcp:4000` once per emulator boot, or the app cannot reach the backend.
 export const config: WebdriverIO.Config = {
   ...sharedConfig,
 

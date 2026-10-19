@@ -1,6 +1,7 @@
 name: e2e
 
-# Type and lint checks for the suite. The Appium (iOS/Android) suites need a simulator or emulator with a
+# Type and lint checks, then the unit tests for the pricing oracle and the result classifier that every
+# UI and API assertion depends on. The Appium (iOS/Android) suites need a simulator or emulator with a
 # native build of the app installed, and the API specs need its backend; neither is in this repository, so
 # both run locally (see e2e/README.md). The API specs are type- and lint-checked here like the rest.
 on:
@@ -24,3 +25,4 @@ jobs:
           cache-dependency-path: e2e/package-lock.json
       - run: npm ci
       - run: npm run check
+      - run: npm run test:unit

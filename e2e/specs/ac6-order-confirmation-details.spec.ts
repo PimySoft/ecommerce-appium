@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import CartPage from '../pageobjects/CartPage.js';
 import CheckoutPage from '../pageobjects/CheckoutPage.js';
 import OrderSuccessPage from '../pageobjects/OrderSuccessPage.js';
-import { setUpCartWithProduct } from '../helpers/cartSetup.js';
+import { setUpSignedInCartWithProduct } from '../helpers/cartSetup.js';
 import { products } from '../fixtures/products.js';
 import { coupons } from '../fixtures/coupons.js';
 import { testShippingDetails, testPaymentDetails } from '../fixtures/checkoutDetails.js';
@@ -13,7 +13,7 @@ describe('AC-6: what the confirmation screen tells the shopper', () => {
   let checkoutTotalBeforePay: number;
 
   before(async () => {
-    await setUpCartWithProduct(products.primary);
+    await setUpSignedInCartWithProduct(products.primary);
     await CartPage.applyCoupon(coupons.valid);
     await CartPage.proceedToCheckout();
     await CheckoutPage.fillShippingDetails(testShippingDetails);
@@ -23,11 +23,10 @@ describe('AC-6: what the confirmation screen tells the shopper', () => {
   });
 
   it('AC-6: an order number is shown', async () => {
-    // Order numbers come from a counter that carries over between runs, so only the pattern is checked.
+    // The order counter is shared across runs, so only the format is predictable.
     expect(await OrderSuccessPage.getOrderNumber()).to.match(/^WS-\d{4}-\d{6}$/);
   });
 
-  // Checks the confirmation agrees with Checkout. Whether that amount is right is the next test.
   it('AC-6: the total matches what Checkout showed before Pay', async () => {
     expect(await OrderSuccessPage.getTotal()).to.equal(checkoutTotalBeforePay);
   });

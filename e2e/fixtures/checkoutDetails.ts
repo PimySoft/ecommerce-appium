@@ -1,4 +1,3 @@
-// Valid input for the checkout form (card details are validated on-device only).
 export const testShippingDetails = {
   name: 'Jane Tester',
   email: 'jane.tester@example.com',

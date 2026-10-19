@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import CartPage from '../pageobjects/CartPage.js';
-import { setUpCartWithProduct } from '../helpers/cartSetup.js';
+import { setUpGuestCartWithProduct } from '../helpers/cartSetup.js';
 import { products } from '../fixtures/products.js';
 import { coupons } from '../fixtures/coupons.js';
 import { expectedDiscount, lineSubtotal } from '../helpers/expectedPricing.js';
@@ -9,7 +9,7 @@ describe('Coupon input edge cases', () => {
   const subtotal = lineSubtotal(products.primary);
 
   beforeEach(async () => {
-    await setUpCartWithProduct(products.primary);
+    await setUpGuestCartWithProduct(products.primary);
   });
 
   it('AC-2: a lowercase code ("save25") is accepted @known-defect SHOP-101-D1', async () => {
@@ -53,7 +53,9 @@ describe('Coupon input edge cases', () => {
     await CartPage.applyCoupon(coupons.valid);
     const secondDiscount = await CartPage.getDiscount();
 
-    expect(secondDiscount, 'a second Apply with the same code should leave the discount as it was').to.equal(firstDiscount);
+    expect(secondDiscount, 'a second Apply with the same code should leave the discount as it was').to.equal(
+      firstDiscount,
+    );
   });
 
   it('AC-5: replacing a valid code with an invalid one removes the discount', async () => {
@@ -61,7 +63,6 @@ describe('Coupon input edge cases', () => {
     expect(await CartPage.isDiscountLineDisplayed(), 'the valid code should add a discount').to.be.true;
 
     await CartPage.applyCoupon(coupons.invalid);
-    expect(await CartPage.isDiscountLineDisplayed(), 'the discount should go once the code is invalid').to.be
-      .false;
+    expect(await CartPage.isDiscountLineDisplayed(), 'the discount should go once the code is invalid').to.be.false;
   });
 });

@@ -17,6 +17,7 @@
     "fixtures/**/*.ts",
     "helpers/**/*.ts",
     "api/**/*.ts",
+    "unit/**/*.ts",
     "scripts/**/*.ts",
     "specs/**/*.ts"
   ]

@@ -12,9 +12,10 @@ Appium 3 and WebdriverIO 9 in TypeScript, with Mocha/Chai and the Page Object Mo
   - Android: package `com.example.shop`, activity `.MainActivity`.
 
   The suite launches the installed app. It doesn't build or install it. Appium can't drive an app inside Expo Go, so this has to be a native build (for example from `expo run:ios` / `expo run:android`).
+
 - **The backend** on `http://localhost:4000`, seeded with the test account and products in [`fixtures/`](fixtures/).
 
-The UI suites and the API specs need the app and backend, which aren't in this repository. Without them, the type and lint checks still run, and those are what CI runs on every push ([`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml)).
+The UI suites and the API specs need the app and backend, which aren't in this repository. Without them, the type and lint checks and the unit tests still run, and those are what CI runs on every push ([`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml)).
 
 ## Setup
 
@@ -39,18 +40,19 @@ The UI suites and the API specs need the app and backend, which aren't in this r
 
 ## Running
 
-| Command | What it does |
-|---|---|
-| `npm run test:ios` | UI suite on the iOS Simulator |
-| `npm run test:android` | UI suite on the Android emulator |
-| `npm run test:api` | API specs against the backend; about a second, no simulator |
-| `npm run check` | `tsc --noEmit`, then ESLint |
-| `npm run test:report` | Sorts the last run into expected-red, new-red, unexpectedly-green and flaky |
-| `npm run test:rerun-failed` | Reruns each new-red test once, so the report can tell flaky from broken |
-| `npm run test:flake-rate` | Flake events per test over the last 20 runs; exits 1 when one needs quarantining |
-| `npm run test:table` | Prints a per-spec pass/fail table (Markdown) from the last run |
+| Command                     | What it does                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------- |
+| `npm run test:ios`          | UI suite on the iOS Simulator                                                         |
+| `npm run test:android`      | UI suite on the Android emulator                                                      |
+| `npm run test:api`          | API specs against the backend; about a second, no simulator                           |
+| `npm run check`             | `tsc --noEmit`, ESLint, then the Prettier check                                       |
+| `npm run test:unit`         | Unit tests for the pricing oracle and the result classifier; no app or backend needed |
+| `npm run test:report`       | Sorts the last run into expected-red, new-red, unexpectedly-green and flaky           |
+| `npm run test:rerun-failed` | Reruns each new-red test once, so the report can tell flaky from broken               |
+| `npm run test:table`        | Prints a per-spec pass/fail table (Markdown) from the last run                        |
 
 Settings you can override with environment variables:
+
 - `IOS_DEVICE_NAME` and `IOS_PLATFORM_VERSION` pick the simulator;
 - `ANDROID_DEVICE_NAME` picks the emulator;
 - `API_URL` points the API specs at a different backend.
@@ -61,7 +63,7 @@ To run one test, pass a pattern for its full title (`describe` included):
 
     npx wdio run ./wdio.ios.conf.ts --mochaOpts.grep "AC-3: adding a second product"
 
-Each test relaunches the app and builds its own basket, so any test can run alone or in any order.
+Each test relaunches the app and builds its own basket, so any test can run alone or in any order. Tests that stay on the basket do it signed out; only tests that reach Checkout sign in.
 
 ## Reading the results
 
@@ -70,11 +72,11 @@ Some tests are expected to fail. They prove three open defects and end their tit
     npm run test:report                 # every results file in logs/
     npm run test:report -- ios api      # only some sources
 
-| Exit code | Meaning |
-|---|---|
-| 0 | Every failure is a tagged known defect |
-| 1 | A **new-red** (untagged failure or a failed setup hook), an **unexpectedly-green** (tagged but passing, so the defect looks fixed and the tag should be removed), or an expired quarantine |
-| 2 | No results found |
+| Exit code | Meaning                                                                                                                                                          |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0         | Every failure is a tagged known defect                                                                                                                           |
+| 1         | A **new-red** (untagged failure or a failed setup hook), an **unexpectedly-green** (tagged but passing, so the defect looks fixed and the tag should be removed) |
+| 2         | No results found                                                                                                                                                 |
 
 In CI, run the suite while ignoring its exit code, give new failures one more try, then gate on the report:
 
@@ -86,14 +88,16 @@ Each failed UI test also saves a screenshot and the page source to `logs/`. A wo
 
 ## Flaky tests
 
-The main run never retries (`specFileRetries` and Mocha `retries` are 0). A test that fails and then passes on `test:rerun-failed` is reported as **flaky**, never as green. One that flakes more than twice in 20 runs is quarantined: it gets `@flaky SHOP-101-F<n>` in its title and an entry in [`helpers/flakyTests.ts`](helpers/flakyTests.ts) with an owner, a reason, a ticket and an expiry date. It keeps running and reporting but no longer gates the build, until the date passes. The full policy is in the [engineering notes](docs/engineering-notes.md#flaky-test-policy).
+The main run never retries (`specFileRetries` and Mocha `retries` are 0), and page objects never tap twice. A test that fails and then passes on `test:rerun-failed` is reported as **flaky**, never as green, and gets a root-cause fix. The full policy is in the [engineering notes](docs/engineering-notes.md#flaky-test-policy).
 
 ## Conventions for new tests
 
-ESLint enforces the first two rules. The rest are checked in code review.
+ESLint enforces the first two rules and Prettier the formatting. The rest are checked in code review.
 
 - **Specs use page objects only.** A spec can't use `$`, `$$`, `driver` or `browser` directly. Selectors and taps go in a page object method, for example `CartPage.applyCoupon(code)`.
-- **No fixed sleeps.** `.pause()` is rejected. Wait on a condition (`waitForDisplayed`, `waitUntil`) with a limit from [`helpers/timeouts.ts`](helpers/timeouts.ts).
+- **No fixed sleeps.** `.pause()` is rejected. Use the `BasePage` actions (`tap`, `type`, `readText`, `isShown`, `waitForGone`), which wait on the element itself with a limit from [`helpers/timeouts.ts`](helpers/timeouts.ts).
+- **Confirm navigation by the next screen.** Wait for an element of the screen you expect, not for the old one to go: Android keeps covered screens in the element tree.
+- **Run `npm run format` before committing.** `npm run check` fails on unformatted code.
 - **Look up elements by `testID`, through `BasePage.byTestId()`.** It returns the right selector for each platform. If an element has no `testID`, add one to the app instead of using a text or XPath locator.
 - **Never hardcode an expected total.** Compute it with [`helpers/expectedPricing.ts`](helpers/expectedPricing.ts) from the fixture prices.
 - **One acceptance criterion per test, named with its id** (`AC-3: ...`), so a failure maps straight back to a requirement.
@@ -105,10 +109,11 @@ ESLint enforces the first two rules. The rest are checked in code review.
 ```
 specs/          UI specs: ac1–ac6, plus edge cases, checkout summary and basket changes
 api/            API specs (Mocha) and their reporter
+unit/           unit tests for the pricing oracle and the result classifier
 pageobjects/    BasePage plus one class per screen (product, cart, login, checkout, confirmation)
 helpers/        pricing oracle, cart setup, app lifecycle, gestures, keyboard, timeouts, defect tags, reporters
 fixtures/       products, coupons, users, checkout details
-scripts/        defect-report.ts, results-table.ts, rerun-failed.ts, flake-rate.ts
+scripts/        defect-report.ts, results-table.ts, rerun-failed.ts
 wdio.*.conf.ts  shared, iOS and Android WebdriverIO configs
 ```
 

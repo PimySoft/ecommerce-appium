@@ -1,4 +1,3 @@
-// The rule ignores letter case and surrounding spaces.
 export const coupons = {
   valid: 'SAVE25',
   validLowercase: 'save25',
@@ -8,7 +7,6 @@ export const coupons = {
   empty: '',
 };
 
-// Note shown under the coupon field. Unknown and blank codes get the same message.
 export const notes = {
   applied: /^Coupon applied: -£\d+\.\d{2}$/,
   invalid: 'That coupon is not valid.',

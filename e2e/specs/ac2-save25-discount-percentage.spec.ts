@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import CartPage from '../pageobjects/CartPage.js';
 import CheckoutPage from '../pageobjects/CheckoutPage.js';
 import LoginPage from '../pageobjects/LoginPage.js';
-import { setUpCartWithProduct, setUpGuestCartWithProduct } from '../helpers/cartSetup.js';
+import { setUpGuestCartWithProduct } from '../helpers/cartSetup.js';
 import { products } from '../fixtures/products.js';
 import { coupons } from '../fixtures/coupons.js';
 import { seededUser } from '../fixtures/users.js';
@@ -10,7 +10,7 @@ import { expectedDiscount, formatPence, lineSubtotal } from '../helpers/expected
 
 describe('AC-2: percentage discount for SAVE25', () => {
   it('AC-2: SAVE25 takes a quarter off the subtotal @known-defect SHOP-101-D1', async () => {
-    await setUpCartWithProduct(products.primary);
+    await setUpGuestCartWithProduct(products.primary);
 
     const subtotal = lineSubtotal(products.primary);
     expect(await CartPage.getSubtotal(), 'displayed subtotal should be the product price × 1').to.equal(subtotal);
@@ -27,15 +27,14 @@ describe('AC-2: percentage discount for SAVE25', () => {
   });
 
   it('AC-2: a guest who applies SAVE25 still has it after signing in at checkout @known-defect SHOP-101-D3 @known-defect SHOP-101-D1', async () => {
-    // Guest basket: Checkout sends the shopper to sign in first, and the coupon has to survive that detour.
     await setUpGuestCartWithProduct(products.secondary);
 
     const subtotal = lineSubtotal(products.secondary);
     expect(await CartPage.getSubtotal(), 'displayed subtotal should be the product price × 1').to.equal(subtotal);
 
     await CartPage.applyCoupon(coupons.valid);
-    await CartPage.proceedToCheckout(); // guest, so this opens sign-in first
-    await LoginPage.login(seededUser.email, seededUser.password); // after sign-in the app returns to Checkout
+    await CartPage.proceedToCheckout();
+    await LoginPage.loginAndContinueToCheckout(seededUser.email, seededUser.password);
 
     const expected = expectedDiscount(subtotal, coupons.valid);
     const discountDisplayed = await CheckoutPage.isDiscountLineDisplayed();

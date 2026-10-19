@@ -1,13 +1,13 @@
 import { expect } from 'chai';
 import CartPage from '../pageobjects/CartPage.js';
 import ProductDetailPage from '../pageobjects/ProductDetailPage.js';
-import { setUpCartWithProduct } from '../helpers/cartSetup.js';
+import { setUpGuestCartWithProduct } from '../helpers/cartSetup.js';
 import { products } from '../fixtures/products.js';
 import { expectedShipping, formatPence, lineSubtotal } from '../helpers/expectedPricing.js';
 
 describe('AC-3: flat shipping charge', () => {
   beforeEach(async () => {
-    await setUpCartWithProduct(products.primary);
+    await setUpGuestCartWithProduct(products.primary);
   });
 
   it('AC-3: one item in the basket costs £5.00 to ship', async () => {

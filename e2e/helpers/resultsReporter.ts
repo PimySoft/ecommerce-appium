@@ -1,10 +1,7 @@
 import WDIOReporter, { type HookStats, type RunnerStats, type TestStats } from '@wdio/reporter';
 import { resultsFileName, writeResults, type TestResult } from './resultsFile.js';
 
-/**
- * WebdriverIO reporter that keeps each test's raw title and outcome for `scripts/defect-report.ts`.
- * The JUnit reporter rewrites titles ("AC-2:" becomes "AC 2"), which would blur the `@known-defect` tags.
- */
+// The JUnit reporter rewrites titles ("AC-2:" becomes "AC 2"), which loses the `@known-defect` tags.
 export default class ResultsReporter extends WDIOReporter {
   private results: TestResult[] = [];
   private source = 'device';

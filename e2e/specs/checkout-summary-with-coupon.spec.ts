@@ -1,23 +1,24 @@
 import { expect } from 'chai';
 import CartPage from '../pageobjects/CartPage.js';
 import CheckoutPage from '../pageobjects/CheckoutPage.js';
-import { setUpCartWithProduct } from '../helpers/cartSetup.js';
+import { setUpSignedInCartWithProduct } from '../helpers/cartSetup.js';
 import { products } from '../fixtures/products.js';
 import { coupons } from '../fixtures/coupons.js';
 import { expectedTotals, formatPence, lineSubtotal } from '../helpers/expectedPricing.js';
 
-// Signed-in shopper, so Checkout opens directly with the coupon applied. The guest path is in the AC-2 spec.
 describe('Checkout summary after applying SAVE25', () => {
   const expected = expectedTotals(lineSubtotal(products.primary), coupons.valid);
 
   beforeEach(async () => {
-    await setUpCartWithProduct(products.primary);
+    await setUpSignedInCartWithProduct(products.primary);
     await CartPage.applyCoupon(coupons.valid);
     await CartPage.proceedToCheckout();
   });
 
   it('AC-2: Checkout shows 25% off @known-defect SHOP-101-D1', async () => {
-    expect(await CheckoutPage.getSubtotal(), 'Checkout subtotal should be the product price × 1').to.equal(expected.subtotal);
+    expect(await CheckoutPage.getSubtotal(), 'Checkout subtotal should be the product price × 1').to.equal(
+      expected.subtotal,
+    );
 
     expect(await CheckoutPage.isDiscountLineDisplayed(), 'the coupon should carry through to Checkout').to.be.true;
     expect(

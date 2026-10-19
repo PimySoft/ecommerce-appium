@@ -1,109 +1,99 @@
 import BasePage from './BasePage.js';
 import { dismissKeyboard } from '../helpers/keyboard.js';
-import { recordRetry } from '../helpers/retryLog.js';
+import { OPTIONAL_ELEMENT_TIMEOUT } from '../helpers/timeouts.js';
 import type { Pence } from '../helpers/expectedPricing.js';
 import type { Product } from '../fixtures/products.js';
 
 class CartPage extends BasePage {
-  get headerCartButton() { return this.byTestId('header_cart_button'); }
-  get couponInput() { return this.byTestId('cart_coupon_input'); }
-  get applyButton() { return this.byTestId('cart_apply_button'); }
-  get noteText() { return this.byTestId('cart_note_text'); }
-  get proceedButton() { return this.byTestId('cart_proceed_button'); }
-  get startShoppingButton() { return this.byTestId('cart_start_shopping_button'); }
-
-  get subtotalValue() { return this.byTestId('cart_summary_subtotal'); }
-  get discountValue() { return this.byTestId('cart_summary_discount'); }
-  get shippingValue() { return this.byTestId('cart_summary_shipping'); }
-  get totalValue() { return this.byTestId('cart_summary_total'); }
-
-  removeButton(productId: string, size: string) { return this.byTestId(`cart_remove_button_${productId}_${size}`); }
-
-  /** Header cart button, present on every screen except Login/Register/Checkout/OrderSuccess. */
-  async openFromHeader(): Promise<void> {
-    // The header button stays visible on Cart, so landing means Cart content (or its empty state) is showing.
-    await this.tapAndRetryIfStuck(this.headerCartButton, undefined, [this.applyButton, this.startShoppingButton]);
+  get couponInput() {
+    return this.byTestId('cart_coupon_input');
+  }
+  get applyButton() {
+    return this.byTestId('cart_apply_button');
+  }
+  get noteText() {
+    return this.byTestId('cart_note_text');
+  }
+  get proceedButton() {
+    return this.byTestId('cart_proceed_button');
+  }
+  get startShoppingButton() {
+    return this.byTestId('cart_start_shopping_button');
+  }
+  get subtotalValue() {
+    return this.byTestId('cart_summary_subtotal');
+  }
+  get discountValue() {
+    return this.byTestId('cart_summary_discount');
+  }
+  get shippingValue() {
+    return this.byTestId('cart_summary_shipping');
+  }
+  get totalValue() {
+    return this.byTestId('cart_summary_total');
   }
 
-  /**
-   * Every Apply press sets the note text, so a new note proves the tap landed; otherwise tap again
-   * (idempotent) and log it. If the same note was already showing, the tap can't be verified, so it
-   * is logged as unverified and left to the spec's assertions.
-   */
+  removeButton(product: Product) {
+    return this.byTestId(`cart_remove_button_${product.id}_${product.size}`);
+  }
+
   async applyCoupon(code: string): Promise<void> {
-    await this.waitForDisplayedAndSetValue(this.couponInput, code);
+    await this.type(this.couponInput, code);
     await dismissKeyboard();
+    const previousNote = await this.currentNote();
+    await this.tap(this.applyButton);
 
-    const noteBefore = await this.readNote();
-    await this.waitForDisplayedAndTap(this.applyButton);
-    if (await this.noteChangedFrom(noteBefore)) return;
-
-    if (noteBefore !== null) {
-      recordRetry({ kind: 'unverified', where: 'CartPage.applyCoupon', detail: `note unchanged ("${noteBefore}") for "${code}"` });
+    if (previousNote === null) {
+      await this.waitForDisplayed(this.noteText);
       return;
     }
-    recordRetry({ kind: 'retry', where: 'CartPage.applyCoupon', detail: `no note after first Apply tap for "${code}"` });
-    await this.waitForDisplayedAndTap(this.applyButton);
+    // Re-applying a code with the same result leaves the note unchanged, so there is no change to wait for.
+    const note = $(this.noteText);
+    await note
+      .waitUntil(async () => (await note.getText()) !== previousNote, { timeout: OPTIONAL_ELEMENT_TIMEOUT })
+      .catch(() => undefined);
   }
 
-  /** Current note text, or null when no note is rendered. */
-  private async readNote(): Promise<string | null> {
-    const el = await $(this.noteText);
-    return (await el.isExisting()) ? el.getText() : null;
-  }
-
-  private async noteChangedFrom(before: string | null): Promise<boolean> {
-    return driver
-      .waitUntil(async () => (await this.readNote()) !== before, { timeout: 3000, interval: 200 })
-      .catch(() => false);
+  private async currentNote(): Promise<string | null> {
+    const note = $(this.noteText);
+    return (await note.isExisting()) ? note.getText() : null;
   }
 
   async getNoteText(): Promise<string> {
-    return this.getTextWhenDisplayed(this.noteText);
+    return this.readText(this.noteText);
   }
 
   async isDiscountLineDisplayed(): Promise<boolean> {
-    return this.isDisplayed(this.discountValue, 3000);
+    return this.isShown(this.discountValue);
   }
 
-  /** Summary amounts in pence; the discount is the amount taken off, so positive. */
   async getSubtotal(): Promise<Pence> {
-    return this.getAmountWhenDisplayed(this.subtotalValue);
+    return this.readAmount(this.subtotalValue);
   }
 
   async getDiscount(): Promise<Pence> {
-    return this.getAmountWhenDisplayed(this.discountValue);
+    return this.readAmount(this.discountValue);
   }
 
   async getShipping(): Promise<Pence> {
-    return this.getAmountWhenDisplayed(this.shippingValue);
+    return this.readAmount(this.shippingValue);
   }
 
   async getTotal(): Promise<Pence> {
-    return this.getAmountWhenDisplayed(this.totalValue);
+    return this.readAmount(this.totalValue);
   }
 
-  /**
-   * Removes one cart line and waits for its Remove button to go, so the summary is read after the
-   * re-render. `tapAndRetryIfStuck` only waits like this on iOS.
-   */
   async removeLine(product: Product): Promise<void> {
-    const button = this.removeButton(product.id, product.size);
-    await this.tapAndRetryIfStuck(button);
-    // Re-query on every poll: the last line's removal swaps the whole screen, which drops a held element reference.
-    await driver.waitUntil(async () => !(await (await $(button)).isExisting()), {
-      timeout: 5000,
-      timeoutMsg: `${button} still present after Remove`,
-    });
+    await this.tap(this.removeButton(product));
+    await this.waitForGone(this.removeButton(product));
   }
 
-  /** True once the empty-cart state ("Start Shopping") is showing instead of the lines and summary. */
   async isEmpty(): Promise<boolean> {
-    return this.isDisplayed(this.startShoppingButton, 5000);
+    return this.isShown(this.startShoppingButton);
   }
 
   async proceedToCheckout(): Promise<void> {
-    await this.tapAndRetryIfStuck(this.proceedButton);
+    await this.tap(this.proceedButton);
   }
 }
 

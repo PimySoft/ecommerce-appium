@@ -10,7 +10,7 @@ This is how I approach mobile test automation as a QA lead:
 - **A framework a team can maintain.** Selectors, waits and platform differences live in page objects, and lint rules keep them there.
 - **Independent expected results.** Totals are calculated from the business rule, never copied from the screen.
 - **Honest defect reporting.** Tests that prove real defects stay red and are tracked separately from new failures and from flaky ones.
-- **Fast feedback below the UI.** API specs check the same rule in about a second. CI type-checks and lints every push.
+- **Fast feedback below the UI.** API specs check the same rule in about a second. On every push, CI type-checks and lints the suite and runs unit tests for the code that decides what counts as a pass.
 
 ## The app under test
 
@@ -25,7 +25,7 @@ This is how I approach mobile test automation as a QA lead:
 - **AC-5:** an unknown or blank code applies nothing and shows an error.
 - **AC-6:** the confirmation shows the order number, total, coupon and discount.
 
-Each AC has its own spec (`ac1-…` to `ac6-…`). Further specs cover basket changes after applying the coupon, the checkout summary, and edge cases (letter case, surrounding spaces, applying twice, replacing a valid code with an invalid one, half-penny rounding). In total there are 28 UI tests in 9 specs, run on both platforms, plus 23 API tests.
+Each AC has its own spec (`ac1-…` to `ac6-…`). Further specs cover basket changes after applying the coupon, the checkout summary, and edge cases (letter case, surrounding spaces, applying twice, replacing a valid code with an invalid one, half-penny rounding). In total there are 28 UI tests in 9 specs, run on both platforms, plus 23 API tests and 29 unit tests.
 
 ## Defects found
 
@@ -43,26 +43,29 @@ Each AC has its own spec (`ac1-…` to `ac6-…`). Further specs cover basket ch
 
 **Known defects are tagged, not hidden.** Tests that prove a defect end with `@known-defect SHOP-101-D<n>`, and their assertions are never weakened. `npm run test:report` sorts each run into three groups: expected-red, new-red and unexpectedly-green. It exits 1 only for the last two, so it can gate CI while known defects are still open.
 
-**Flaky tests are named, owned and time-limited.** Nothing retries silently. `npm run test:rerun-failed` gives each new failure one more try, and a test that passes second time is reported as flaky, never green. A test that flakes more than twice in 20 runs is quarantined with an owner, a root-cause ticket and an expiry date; once that date passes, the report fails until someone fixes, renews or deletes it. A retry hides a problem; a quarantine with an owner gets it fixed.
+**No retries anywhere in the run.** Mocha and WebdriverIO retries are off, and page objects never tap twice. `npm run test:rerun-failed` gives each new failure one more try afterwards, and a test that passes second time is reported as flaky, never green. A flaky test gets a root-cause fix, not a longer wait or a retry.
 
-**Waits based on measurements.** There are no sleeps. The time limits in [`helpers/timeouts.ts`](e2e/helpers/timeouts.ts) each come with the measurement behind them, for example an Android cold start of up to 21.5s, which sets a 60s launch limit.
+**One way to wait.** There are no sleeps. Every action waits on the element it uses with WebdriverIO's element waits (`waitForDisplayed`, `waitForEnabled`, `waitForExist`), all in [`BasePage`](e2e/pageobjects/BasePage.ts). Navigation is confirmed by the next screen's element appearing, never by polling the old screen: Android keeps the previous screen in the element tree, and asking whether a covered element is displayed took over 11s per call. The time limits in [`helpers/timeouts.ts`](e2e/helpers/timeouts.ts) each come from a measurement, for example an Android cold start of up to 21.5s, which sets a 60s launch limit.
 
 **Gestures sized from the screen.** Scrolls in [`helpers/gestures.ts`](e2e/helpers/gestures.ts) are fractions of the window size rather than pixel coordinates, so they work on any device size.
 
-**A clean app for every test.** Each test relaunches the app and builds its own basket through [`helpers/cartSetup.ts`](e2e/helpers/cartSetup.ts), so tests can run alone or in any order.
+**A clean app for every test, and no setup it doesn't need.** Each test relaunches the app and builds its own basket through [`helpers/cartSetup.ts`](e2e/helpers/cartSetup.ts), so tests can run alone or in any order. The basket prices coupons the same way whether the shopper is signed in or not, so only the tests that go on to Checkout sign in. Skipping a UI sign-in in the other 20 tests saves about 5.7s each on iOS, roughly a fifth of the run. The app keeps sign-in and basket state in memory and has no deep links, so this state can't be seeded through the API; doing that would need a test hook in the app, which I'd raise with the developers rather than add myself.
 
 **An API layer.** Mocha specs call `POST /api/cart/summary` and `POST /api/orders` with the same oracle. They check the backend's copy of the rule and the stored order, which the UI can't see. The backend isn't published, so CI type-checks these specs without running them. A stub server would only test the stub.
 
-**Lint rules for team consistency.** ESLint rejects direct `$`, `driver` or `browser` calls in specs, and any `.pause()`. A convention enforced by a linter survives code review; one written only on a wiki doesn't.
+**Unit tests for the code that judges the tests.** Every expected total comes from the pricing oracle, and every red or green verdict comes from the result classifier. If either were wrong, the whole suite would be wrong without any spec failing. [`unit/`](e2e/unit/) pins both down (rounding edges, coupon matching, expected-red vs new-red vs flaky, crashed specs), and CI runs them on every push.
+
+**Lint and formatting enforced, not suggested.** ESLint rejects direct `$`, `driver` or `browser` calls in specs, and any `.pause()`. Prettier formats every file, and CI fails on unformatted code. A convention enforced by a tool survives code review; one written only on a wiki doesn't. Comments are kept for what the code can't say, such as a platform quirk or a business rule.
 
 ## Repository layout
 
 - `e2e/specs/`: UI specs, one per acceptance criterion, plus edge cases
 - `e2e/api/`: API specs (no simulator needed)
+- `e2e/unit/`: unit tests for the pricing oracle and the result classifier (run in CI)
 - `e2e/pageobjects/`: one class per screen, with platform-aware selectors in `BasePage`
 - `e2e/helpers/`: pricing oracle, shared setup, gestures, timeouts, defect tags, reporters
 - `e2e/fixtures/`: test data
-- `e2e/scripts/`: defect report, results table, rerun of failures, flake rate
+- `e2e/scripts/`: defect report, results table, rerun of failures
 - `e2e/docs/`: engineering notes
 
 Setup and run instructions are in [`e2e/README.md`](e2e/README.md). The full project, including the app and backend, is available on request.

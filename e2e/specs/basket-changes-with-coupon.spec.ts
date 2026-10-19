@@ -1,19 +1,17 @@
 import { expect } from 'chai';
 import CartPage from '../pageobjects/CartPage.js';
 import ProductDetailPage from '../pageobjects/ProductDetailPage.js';
-import { setUpCartWithProduct } from '../helpers/cartSetup.js';
+import { setUpGuestCartWithProduct } from '../helpers/cartSetup.js';
 import { products, roundingBoundary } from '../fixtures/products.js';
 import { coupons } from '../fixtures/coupons.js';
 import { expectedTotals, formatPence, lineSubtotal } from '../helpers/expectedPricing.js';
 
-// Each test starts from a basket holding `products.primary`, then changes it.
-// Expected figures come from the fixture prices, never from what the screen shows.
 describe('SAVE25 as the basket changes', () => {
   const primary = products.primary;
   const secondary = products.secondary;
 
   beforeEach(async () => {
-    await setUpCartWithProduct(primary);
+    await setUpGuestCartWithProduct(primary);
   });
 
   async function addSecondary(): Promise<void> {
@@ -23,7 +21,9 @@ describe('SAVE25 as the basket changes', () => {
   it('AC-2: SAVE25 takes 25% off a basket with two different products @known-defect SHOP-101-D1', async () => {
     await addSecondary();
     const expected = expectedTotals(lineSubtotal(primary) + lineSubtotal(secondary), coupons.valid);
-    expect(await CartPage.getSubtotal(), 'displayed subtotal should be both product prices').to.equal(expected.subtotal);
+    expect(await CartPage.getSubtotal(), 'displayed subtotal should be both product prices').to.equal(
+      expected.subtotal,
+    );
 
     await CartPage.applyCoupon(coupons.valid);
 
@@ -47,9 +47,11 @@ describe('SAVE25 as the basket changes', () => {
 
   it('AC-2: adding a second unit after applying SAVE25 updates the discount @known-defect SHOP-101-D1', async () => {
     await CartPage.applyCoupon(coupons.valid);
-    await ProductDetailPage.addAnotherProduct(primary); // same product again: Qty 2
+    await ProductDetailPage.addAnotherProduct(primary);
     const expected = expectedTotals(lineSubtotal(primary, 2), coupons.valid);
-    expect(await CartPage.getSubtotal(), 'displayed subtotal should be the product price × 2').to.equal(expected.subtotal);
+    expect(await CartPage.getSubtotal(), 'displayed subtotal should be the product price × 2').to.equal(
+      expected.subtotal,
+    );
 
     expect(
       await CartPage.getDiscount(),
@@ -63,7 +65,9 @@ describe('SAVE25 as the basket changes', () => {
 
     await CartPage.removeLine(secondary);
     const expected = expectedTotals(lineSubtotal(primary), coupons.valid);
-    expect(await CartPage.getSubtotal(), 'subtotal should drop to the product that is left').to.equal(expected.subtotal);
+    expect(await CartPage.getSubtotal(), 'subtotal should drop to the product that is left').to.equal(
+      expected.subtotal,
+    );
 
     expect(
       await CartPage.getDiscount(),
@@ -80,11 +84,12 @@ describe('SAVE25 as the basket changes', () => {
     expect(await CartPage.isDiscountLineDisplayed(), 'an empty basket should have no discount row').to.be.false;
   });
 
-  // 2 × £18.99 = £37.98, and 25% of that is £9.495, so the expected discount rounds up to £9.50 (helpers/expectedPricing.ts).
   it('AC-2: a 25% discount ending in half a penny is rounded up @known-defect SHOP-101-D1', async () => {
     await ProductDetailPage.addAnotherProduct(roundingBoundary.product);
     const expected = expectedTotals(lineSubtotal(roundingBoundary.product, roundingBoundary.quantity), coupons.valid);
-    expect(await CartPage.getSubtotal(), 'displayed subtotal should be the product price × 2').to.equal(expected.subtotal);
+    expect(await CartPage.getSubtotal(), 'displayed subtotal should be the product price × 2').to.equal(
+      expected.subtotal,
+    );
 
     await CartPage.applyCoupon(coupons.valid);
 

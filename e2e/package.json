@@ -10,13 +10,15 @@
     "test:ios": "wdio run ./wdio.ios.conf.ts",
     "test:android": "wdio run ./wdio.android.conf.ts",
     "test:api": "mocha --require ./api/register.cjs --reporter ./api/resultsReporter.cjs --extension ts --timeout 15000 \"api/**/*.api.spec.ts\"",
+    "test:unit": "mocha --require ./api/register.cjs --extension ts \"unit/**/*.test.ts\"",
     "test:report": "node -r ./api/register.cjs scripts/defect-report.ts",
     "test:table": "node -r ./api/register.cjs scripts/results-table.ts",
     "test:rerun-failed": "node -r ./api/register.cjs scripts/rerun-failed.ts",
-    "test:flake-rate": "node -r ./api/register.cjs scripts/flake-rate.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "check": "npm run typecheck && npm run lint"
+    "check": "npm run typecheck && npm run lint && npm run format:check",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
@@ -33,6 +35,7 @@
     "appium": "3.1.2",
     "chai": "^4.5.0",
     "eslint": "^9.39.5",
+    "prettier": "3.9.9",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.70.0",
