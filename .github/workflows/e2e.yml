@@ -1,0 +1,26 @@
+name: e2e
+
+# Type and lint checks for the suite. The Appium (iOS/Android) suites need a simulator or emulator with a
+# native build of the app installed, and the API specs need its backend; neither is in this repository, so
+# both run locally (see e2e/README.md). The API specs are type- and lint-checked here like the rest.
+on:
+  push:
+    paths: ['e2e/**', '.github/workflows/e2e.yml']
+  pull_request:
+    paths: ['e2e/**', '.github/workflows/e2e.yml']
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: e2e
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      - run: npm ci
+      - run: npm run check

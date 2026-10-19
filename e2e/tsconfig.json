@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "lib": ["ES2022"],
+    "types": ["node", "@wdio/globals/types", "@wdio/mocha-framework", "expect-webdriverio"],
+    "outDir": "./dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "wdio.*.conf.ts",
+    "pageobjects/**/*.ts",
+    "fixtures/**/*.ts",
+    "helpers/**/*.ts",
+    "api/**/*.ts",
+    "scripts/**/*.ts",
+    "specs/**/*.ts"
+  ]
+}
